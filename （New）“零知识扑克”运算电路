@@ -1,0 +1,128 @@
+“零知识证明”是去中心化世界的重要工具是，当平台存储数据透明时，如何保持隐私？需要通过链上证据证实的链下扩容方案效果如何？
+“零知识证明”在解决这些问题方面起到了不可忽视的作用
+在为零知识运算电路(zk circuits)编写代码时，有很多库可供选择，其中包括 iden3 团队开发的 circom 和 snarkjs ,对于这个领域的新手来说，运算电路易于编码，并且可以不基于特殊环境，用简单的命令来运行。
+
+**游戏规则**
+1）玩家获得 5 张卡片
+2）不允许换卡
+3）计算手牌大小时，只包括对子，而同花顺，三张或两张相同的牌是不包括在内的
+4) 在玩家回合期间可以选择弃牌，下同样的赌注，再加注
+5)玩家手牌中不包含对子时，不得叫牌
+6）不能虚张声势,这是由零知识证明强制执行的规则。叫牌人可以避免披露他的手牌，同时向其他玩家证明他遵守规则
+
+**运算电路**
+大致轮廓是：
+1)采集输入：包括手牌和玩家的叫价
+2）在手牌中搜寻至少一个对子
+3）评估叫价类型（跟或不跟）
+4）设置约束以检查是否已进行选择
+5）设置约束以检查给定对子是否有效
+
+**具体规范**
+include 规范：
+include“../node_modules/circomlib/circuits/gates.circom”;
+include“../node_modules/circomlib/circuits/comparators.circom”;
+
+文件夹路径是：
+<project root>\poker
+
+安装 circomlib ,从项目根文件夹使用此命令：
+npm install --save circomlib
+
+**运算电路模板**
+template Poker() {
+   ... circuit body ...
+}
+component main = Poker();
+
+**声明输入，输出，以及中间结果**
+
+signal private input cards[5]; // Each 2..14
+ signal input isSee; // 1 or 0
+ signal input isFold; // 1 or 0
+ signal input raise; // int
+ signal output out; // 1 or 0
+ 
+ // Intermediate results
+ signal isBid;
+ signal isRaise;
+ signal hasChosen;
+ 
+ 用数组来声明手牌：card[5]
+ 卡牌大小仅有其面值决定，忽略其花色
+ 即 A=14;K=13;Q=12;J=11 等等.... 一直到 2
+ 手牌是私有输入，即它必须要保密
+ 叫价是公开的，它将公开声明给其他参与者
+ "折牌"和“下同样的赌注” 由布尔值表示，这不是显式声明。Circom 基于 Javascript 实现，因此可以从数据中推断出变量类型；“加注输入”是整数类型，即实际的加注量。
+唯一的输出是 out ,值 1 表示有效，值 0 表示无效，中间值被声明为信号(signal)
+
+**计算对子**
+代码块确定手牌是否包含对子。
+因为是类 javascript 代码，所以不包含任何约束声明以及任何信号处理。
+ 
+ 
+这是一个嵌套循环，依次考虑每张卡，并比较每个后续卡，以检查是否有对子
+发现对子后，就添加到 numPairs 并退出
+这个精简版的 Javascript 没有实现 break,只是通过强制迭代器来退出
+
+// Count pairs
+var numPairs = 0;
+ for (var i=0; i<4; i++) {
+    for (var j=i+1; j<5; j++) {
+       if (cards[i] == cards[j]) {
+          numPairs++;
+          // break doesn’t work. Just force j and i to exit
+          j = 5;
+          i = 5;
+       }
+    }
+ }
+ 
+ 同时也涵盖了信号操作：<- , ->,<==,==>和 ===，代码块的新部分是组件(components) 。组件是一次导入的类的实例，本文是从 circomlib 库导入的，使用布尔运算符组件，查看 circomlib代码，这里包含一个全面的函数库，比如哈希操作，椭圆曲线操作等。
+ 
+ // isRaise = (raise != 0)
+ isRaise <-- (raise > 0);
+ isBid <-- (isRaise || isSee);
+ // Constraint: Must be either bid or fold: isBid XOR isFold = 1
+ hasChosen <-- isBid + isFold — 2*isBid*isFold;
+ hasChosen === 1;
+ // Constraint: numPairs must be > 0 if isBid = 1
+ var hasPairs = (numPairs > 0);
+ component not3 = NOT();
+ not3.in <-- isBid;
+ component or2 = OR();
+ or2.a <-- hasPairs;
+ or2.b <-- not3.out;
+ or2.out === 1;
+ out <-- or2.out;
+ 
+ **运行证明**
+ 初始化步骤与之前类似：
+circom poker.circom -o poker.json
+snarkjs setup -o poker.json
+
+下一步提供所需的输入：
+{“cards”: [8, 7, 4, 7, 13], “isFold”: 0, “isSee”: 0, “raise”: 10 }
+
+因为手牌中包含对子，所以所有的叫价选项都是可用的。玩家选择加注，
+零知识证明在现实生活中，包括电路代码和设置，都需要由证明者和验证者事先声明,验证者的目标是消除任何可能使证明者伪造的可能性
+
+**生成证明**
+snarkjs calculatewitness -c poker.json
+snarkjs proof
+
+证明的生成需要在 O(n) 时间内完成，其中 n 等于约束的数目，接下来由验证者进行验证。
+
+
+
+
+
+
+
+
+
+ 
+ 
+ 
+ 
+ 
