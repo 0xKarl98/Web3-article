@@ -1,0 +1,75 @@
+之前的文章展示了 Alice 如何盲估 d 次多项式在 点 s 处的同态隐藏 E(P(s)),其中 Alice 在整个过程中不知道 s .
+
+然而，在该协议中还有一些遗漏的部分——Alice 能够计算 E(P(s)) ，却并不能保证她一定会把 E(P(s))发送给 Bob,而不是一些完全不相关的值。
+
+这篇文章讲述的就是一些必要的措施让 Alice 保证正确执行协议的基础工具——知识系数测试（KC Test)
+生成器 g 用来生成阶数为 p 的群 G ,本文中将专注加法部分，即 对于 $\alpha\in\mathbb{F}_p$ , $\alpha*g$指的是将 $\alpha$ 与 g 中的副本相加的结果。
+
+**知识系数测试**
+对于 $\alpha\in\mathbb{F}_p^*$ ,
+$\mathbb{F}_p$指的是域 $\mathbb{F}_p$中的非零元素。
+在满足 a,b $\neq$ 0 并且 b=$\alpha$*a 的情况下我们把 G 中的元素对 (a,b) 称为 $\alpha$ 对
+
+**知识系数测试的流程如下**：
+1.Bob 随机选择 $\alpha$ ,其中 $\alpha\in \mathbb{F}_p^*$ 并且 a$\in$G ,并基于b=a*$\alpha$ 计算b
+2.Bob 向 Alice 发送 $\alpha$ 对 (a,b).
+3.Alice 必须给以回应，其中包括同属 $\alpha$ 对的但不同与之前 (a,b) 的 (a',b') .
+4.只有在(a',b') 属于 $\alpha$ 对的时候，Bob 才接受Alice的回应（基于$\alpha$,Bob 可以检验等式 b'=$\alpha$*a'）
+
+假设 Alice 知道 $\alpha$,因此她可以在群G中任意选择一个 a' ,并基于等式 b'=$\alpha$*a' 计算b'，并返回 (a',b') 作为新的 $\alpha$对
+
+关于 $\alpha$, Alice 知道的仅仅是 $\alpha * a$ 与 群 G 之间存在离散对数问题，基于此，Alice 无法获取关于 $\alpha$ 的信息。
+
+那么在不知道 $\alpha$ 的情况下， Alice 是如何对 challenge 进行回应的呢？
+
+过程如下：
+Alice 在域 $\mathbb{F}_p^*$ 中选择 $\gamma$ ,然后将 (a',b') =($\gamma * a,\gamma*b$) 作为回应。
+因此得到 b'=$\gamma$*b=$\gamma\alpha$*a=$\alpha$($\gamma$*a)= $\alpha*a'$
+可得 (a',b') 是 $\alpha$ 对这个条件已经满足
+
+如果 Alice 以这种方式回应，那么她知道 a 和 a' 之间的比率，即她知道 $\gamma$,满足 a'=$\gamma$ *a
+
+KCA: 如果在Bob选定a,$\alpha$,并向 Alice 发送 (a,b) 对的情况下 ， Alice 返回了有效的 $\alpha$ 对(a',b'),那么 Alice 已经获知 $\gamma$,其满足 a'=$\gamma$*a 等式
+
+那么"Alice 获知***" 到底意味着什么呢？
+如何用精确的数学语言来描述 KCA,准确地说，如何在数学定义中对 "Alice 获知 $\gamma$“ 进行形式化?
+
+粗略而浅显的理解是，除了 Alice 之外，还有 Alice Extractor ,它可以访问 Alice 的内部状态。
+
+因此可以这样表述 KCA :每当 Alice 成功回应一个 $\alpha$ 对(a',b') ,Alice Extractor 即输出一个 $\gamma$, 其满足等式 b'=$\gamma$ * a. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
