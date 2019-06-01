@@ -1,0 +1,166 @@
+继上篇第一部分的内容，本篇旨在基于实例了解以太坊智能合约函数的高等语义并逐步拆解证明的执行过程，下面的实例由 KLAB 在 github 上的仓库中给出，是代币的转送函数。
+contract Token {
+  mapping(address => uint) public balanceOf;
+  uint public totalSupply;
+
+  function add(uint256 x, uint256 y) internal returns (uint z) {
+    z = x + y;
+    require(z >= x);
+  }
+
+  function sub(uint256 x, uint256 y) internal returns (uint z) {
+    z = x - y;
+    require(x >= y);
+  }
+  
+  constructor(uint supply) public {
+    totalSupply = supply;
+    balanceOf[msg.sender] = supply;
+  }
+  
+  function transfer(address to, uint256 value) public {
+    balanceOf[msg.sender] = sub(balanceOf[msg.sender], value);
+    balanceOf[to] = add(balanceOf[to], value);
+  }
+}
+
+下面是针对上述 Token 合约的 transfer 函数的高等语义形式：
+behaviour transfer of Token
+interface transfer(address To, uint Value)
+
+types
+
+    FromBal : uint256
+    ToBal   : uint256
+
+storage
+
+    #Token.balances[CALLER_ID] |-> FromBal => FromBal - Value
+    #Token.balances[To]        |-> ToBal => ToBal + Value
+
+iff in range uint256
+
+    FromBal - Value
+    ToBal + Value
+    
+if
+    CALLER_ID =/= To
+   
+**逐步拆解语义**
+其实上面可以抽象拆解为 4 个部分：
+序言：由行为和接口头部组成。 
+    陈述职能和合约的意图;
+类型：辅助变量声明;
+语义声明：这里描述了存储头部;
+语义声明假设：iff和if。
+
+**前言**
+语法如下：
+behaviour <name> of <Contract>
+interface <function>
+
+其中：
+<name>:描述语义的名称，不需要与函数名称相同；
+<contract>:合约名称；
+<function>:函数名称及其接口；
+
+在本例中描述的是 Token 合约中的 Transfer 函数。
+类型(Types)是内部变量,需要根据不同的情况甄别使用不同的类型，在本例中使用的是 Evm 类型，声明了 FromBal 和 ToBal 两个 uint256 整数类型。
+
+最重要的是规范底部的假设(Assumption),即 iff 和 if,在本例中这两者的含义难免有些雾里看花之感，但也不妨碍对其有个大致的了解。
+
+iff<条件>：声明条件为 true ，否则执行将回滚。
+
+if<条件>：只关心条件为 true 的情况，其他情况将被忽视。
+
+in range <type>
+<expression_1>
+<expression_2>
+…
+<expression_k>
+
+在本例中，FromBal-Value 和 ToBal+Value 必须在 uint256 的取值范围之内。而 if 的条件则相对简单，只是声明 CALLER_ID 与 To 不同，其中 CALLER_ID 是 transfer 函数的调用者地址。
+
+假设(Assumption)更严格的定义：
+如果假设的条件在函数执行之前已经满足，那么在函数执行之后，所有的语句都要保持相同；
+举个例子：
+Statements
+
+iff
+   A
+   
+if
+   B
+
+如果在函数执行之前，A 和 B 对应的条件都满足，那么成功执行之后所有的语句都会与之前相同；
+如果在函数执行之前，B 条件满足，而 A 条件不满足，那么函数执行将会被回滚。
+
+语句(Statements)
+storage
+  <X_1> |-> <Y_1> => <Z_1>
+  <X_2> |-> <Y_2> => <Z_2>
+  ...
+  <X_k> |-> <Y_k> => <Z_k>
+  
+<X> |-> <Y> => <Z> 的含义是用<Y>表示地址<X>处的存储器值，那么执行后它等于<Z>
+
+接下来是检查上面的语义与代码是否一一对应：
+1）首先是将源文件编译成字节码
+  solc --combined-json=abi,bin,bin-runtime,srcmap,srcmap-runtime,ast
+
+2)根据字节码和语义来构建 k 语句，在 example/token 目录中运行：klab build
+  然后在 token/out/specs 中查看结果，不过首先需要安装 klab 哦。
+  
+3）KLAB 基于客户端-服务器体系结构，因此需要运行两个进程：
+  服务器端：klab server;
+  客户端：klab debug out/specs/Token_transferFrom_pass_rough.k
+klab debug out/specs/Token_transferFrom_fail.k
+
+如果 K 语句通过了 klab 验证，则意味着代码确实与语义描述完全相同，那么第三部分见咯～
+
+
+
+  
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+   
