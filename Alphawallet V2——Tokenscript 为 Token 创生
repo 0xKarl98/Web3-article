@@ -1,0 +1,36 @@
+AlphaWallet V2 为用户提供了基本的 TokenScript 支持，这是一个能赋予 Token 
+生命活力的崭新框架！
+
+什么是 TokenScript?
+
+TokenScript是一个简单的框架，它使开发者能够安全地编写具备跨平台(iOS、Android和web)工作能力并能与其他服务集成的 Token。
+
+为什么使用 Tokenscript ?
+
+TokenScript 允许用户自由灵活地定义 Token，并由发行方进行签名，可以在移动端和web上无缝工作，而不需要编写自己的钱包。
+这节省了时间和精力，增强了安全性，从而得到更好的用户体验。
+
+用 TokenScript编写的 Token 具备标准化的属性，可以无缝地插入使用该 Token 的其他应用程序。
+举个例子，
+用户在购物时无需像 Web2 时代那样交叉引用
+以太币和忠诚奖励 token ,可以直接查看它们。
+
+TokenScript 还支持向 Token 增添其他链下功能，比如用户可以通过响应 Token 所有权的证明挑战来打开大门。
+
+通过使用 TokenScript 证明“入室token”的所有权以进入 Fake Satoshi 的房子
+
+基于 TokenScript 定义自有 Token
+
+如果用户想为自己的令牌编写 TokenScript以享受本地移动钱包支持和Web集成，
+
+可以按照此处的教程开始进行操作。
+
+其他改进措施
+
+包括增强iOS中 Token 和事务的自动检测以及修复 dapp 浏览器以允许隐私模式下的dapps 能在AlphaWallet上工作。
+
+下一波
+我们很快将为深受用户喜爱的 Token(MakerDAO CDP 和 Compound) 提供 Tokenscript 支持。
+
+
+
