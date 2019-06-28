@@ -1,0 +1,75 @@
+ERC1386 - 管理加密认证的发行者
+
+简介
+我们经常会在区块链中使用像“Alice 居住在澳大利亚”这样的认证；出于隐私原因由有效的发行人离线发型，并且可以在智能合约中撤销。
+
+发行人可以创建智能合约，通过构建已撤销认证的所有哈希的布隆过滤器（Bloom Filter）来一次性撤销多个认证。
+
+发行人也可以将验证方法放在他们的智能合约中，该合约可以被其他需要验证他们所发布认证的合约调用。这允许认证者分别更新其认证格式。
+
+目的
+这个ERC标准给认证发行者提供接口来管理认证签名密钥并且撤销以及验证等行为的认证是在链下发行的。
+
+在实施草案中,我们总结了包括保存加密认证，更改认证的签发合同，撤销认证以及验证加密认证的真实性等在内的函数。
+
+应用案例
+假设我们的朋友 Alice 想要购买一瓶葡萄酒和她的朋友们一起消费。但她想要在线上完成订单，然后寄送到她的家庭住址，并且用以太币支付。
+
+Alice 拥有当地道路和海事服务的加密认证，认证了她的年龄，出生日期，居住国和驾驶能力。
+
+Alice 能够拆分这份认证（参见这里的 MerkleTree ERC) 并且仅提供证明她年满 21 岁的 Merkle 树的叶子 。
+
+Alice 通过葡萄酒供应商提供的智能合约购买葡萄酒，并在 Merkle 树提供年满 21 岁的认证以购买葡萄酒，并提供一定数量的以太币完成购买。
+
+发行者智能合约能够验证 Alice 的认证，核实发行人合约对她年满 21 岁认证的有效性。在这种情况下，它必须来自像驾驶执照这样的权威机构，而像
+
+学校 id 对年龄的认证不够权威。
+
+葡萄酒供应商智能合约验证认证，核实支付金额是否正确，并将 Alice 与她所需的葡萄酒通证相关联以完成销售和葡萄酒交付。
+
+当葡萄酒提供商带着葡萄酒出现在 Alice 的公寓，不需要再证明 Alice 的年龄。
+
+实施草案
+/* 每个认证发行者需要提供他们自己的 verify() 
+ * 给所发行的认证。这么做有两个理由。首先，
+ * 除了推荐的 MerkleTree 格式，我们需要给新的
+ * 认证方法腾出空间。其次，认证的有效性只取决于
+ * 证明者知道的上下文。举个例子，成功兑换美国运通
+ * 信用卡认证的机票 */
+
+contract Issuer {
+  struct Attestation
+    {
+        bytes32[] merklePath;
+        bool valid;
+        uint8 v;
+        bytes32 r;
+        bytes32 s;
+        address attestor;
+        address recipient;
+        bytes32 salt;
+        bytes32 key;
+        bytes32 val;
+    }`
+  /* Verify the authenticity of an attestation */
+  function verify(Attestation attestation);
+  function addattestorKey(address newAttestor, string capacity, uint expiry);
+
+  /* this should call the revoke first */
+  function replaceKey(address attestorToReplace, string capacity, uint expiry, address newAttestor);
+
+  /* this revokes a single key */
+  function removeKey(address attestor);
+
+  /* if the key exists with such capacity and isn't revoked or expired */
+  function validateKey(address attestor, string capacity) returns (bool);
+
+  /* revoke an attestation by replace the bloom filter, this helps preserve privacy */
+  function revokeAttestations(Bloomfilter b);
+
+}
+
+请点击这里查看接口的实施草案。
+
+相关的 ERC
+#1388 #1387
