@@ -1,0 +1,48 @@
+ERC草案-管理可信智能合约列表
+
+简介
+
+在智能合约中需要使用方法来处理用户标识符的加密证明。假设房地产中介 KiwiRealtors 通过智能合约提供 "expression of interest "函数并要用户提供他们是澳大利亚或新西兰居民的证明，作为法律上的要求。这是新西兰房地产市场的实例，它是处理此类证明的完美实例。
+
+但是智能合约完全信任一个发行人在实际中是不可行的。现实生活中，多个发行者为一个人的居住地提供证明——当地的治安法官，土地所有权办公室，当地警察局，护照管理局等等。让我们在脑海中构造一个模型，以列表的形式来管理合格的发行者名单。
+
+任何人都可以发布发行者列表，只有最受信任和精心维护的列表才能得到广泛的应用。
+
+目标
+
+ERC1388 为所有用户提供了智能合约界面，以管理经过证明的发行者列表。智能合约将会信任上面的发行者列表，以及发行者在列表上发布的所有认证。
+
+实施草案
+
+/*此份合约的目的是管理认证发行人合约的列表及其满足要求的能力 */
+
+contract ManagedListERC { /* 管理人(manager)是列表的管家。只有他/她能够在列表上移除或添加认证发行人。
+
+列表上的发行人显示方式是其合约地址，而不是合约所属的认证签名密钥。*/
+struct List { string name; string description; //列表内容简述 string capacity;//认证签名密钥过滤器 /* 如果智能合约指定一个列表，那么只有列表上的发行人发布的认证才能被接受。 此外，如果列表的 capacity 为非空，那么只有具备该 capacity 的经过签名密钥签名的 认证才能被接受 */
+
+ address[] issuerContrats; // 这些都是合约地址，没有签名的 capacity。
+ uint expiry;
+}
+
+//找到发送人(sender)管理的列表，然后对其添加一个发行人 function addIssuer(address issuerContractAddress) public;
+
+//如果发送人列表中没有该发行者，那么返回错误提示 function removeIssuer(addreess issuerContractsAddress, List listToRemoveIssuerFrom) public returns(bool);
+
+/* 通过服务来调用，比如 Kiwi Properties 或 James Squire / / 对所有的发行者合约进行循环，在每次循环时执行 validateKey() 并且返回第一个 hit 所在的合约地址，值得注意的是，存在一种攻击 方法，一个发行者可以声称拥有另一个发行者的密钥，这可以通过之后的 设计来解决。 */ //对发行者列表进行迭代，在 signingKeyofAttestation 上调用 validate() 函数 function getIssuerCorrespondingToAttestationKey(byte32 list_id,address signingKeyOfAttestation) public returns (address);
+
+/*简便起见使用发送人的地址作为列表 ID,
+
+接受以下几种结果， a)如果一个用户想要获取不同 capacity 的列表，那么他/她必须针对每个列表使用不同的发送人地址。 b)如果用户更换了发送人密钥，那么他/她怀疑密钥被泄露或是丢失，并通过特殊方式重置密钥，那么该列表仍然由第一个发送人 地址识别。*/
+
+function createList(List list)public;
+
+/*使用新的密钥替换列表管理者的密钥 */ function replaceListIndex(List list,address manager) public returns(bool);
+
+}
+
+点击这里查看 ERC1388 的实现例子
+
+相关的 ERC 标准
+
+ERC1387 # ERC 1386
